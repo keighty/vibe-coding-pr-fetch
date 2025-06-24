@@ -11,16 +11,17 @@ const headers = {
 }
 
 export async function fetchUserContributions(username: string, start: string, end: string) {
-  const [mergedPRs, reviewedPRs] = await Promise.all([
+  const [mergedPRs, reviewedPRs, draftPRs] = await Promise.all([
     getMergedPRs(username, start, end),
     getReviewedPRs(username, start, end),
+    getDraftPRs(username, start, end),
   ])
 
   return {
     summary: {
       totalMergedPRs: mergedPRs.length,
       totalReviewedPRs: reviewedPRs.length,
-      totalDraftPRs: 0,
+      totalDraftPRs: draftPRs.length,
       totalClosedPRs: 0,
       totalIssuesOpened: 0,
       totalComments: 0,
@@ -29,7 +30,7 @@ export async function fetchUserContributions(username: string, start: string, en
     sections: {
       'Merged PRs': mergedPRs,
       'Reviewed PRs': reviewedPRs,
-      'Draft PRs': [],
+      'Draft PRs': draftPRs,
       'Closed PRs': [],
       'Issues Opened': [],
       'Comments Made': [],
@@ -102,3 +103,30 @@ async function getReviewedPRs(username: string, start: string, end: string) {
     url: pr.html_url,
   }))
 }
+
+async function getDraftPRs(username: string, start: string, end: string) {
+  const query = [
+    'type:pr',
+    'is:open',
+    'is:draft',
+    `author:${username}`,
+    `created:${start}..${end}`,
+  ].join(' ')
+
+  const url = `https://api.github.com/search/issues?q=${encodeURIComponent(query)}&per_page=100`
+  const res = await fetch(url, { headers })
+
+  if (!res.ok) {
+    const data = await res.json()
+    throw new Error(data.message || 'Failed to fetch draft PRs')
+  }
+
+  const result = await res.json()
+
+  return result.items.map((pr: any) => ({
+    title: pr.title,
+    url: pr.html_url,
+    createdAt: pr.created_at,
+  }))
+}
+
