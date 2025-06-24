@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛠️ GitHub Performance Review Tool
 
-## Getting Started
+A secure, local-only web app to help engineering managers review GitHub activity over a selected date range. Built with Next.js App Router, Tailwind CSS, and GitHub's REST API.
 
-First, run the development server:
+---
+
+## ✨ Features
+
+- Secure input form for GitHub username and date range
+- Summary statistics:
+  - Merged PRs, Draft PRs, Closed PRs, Issues Opened, Comments Made
+  - Average time to merge PRs
+- Collapsible sections for:
+  - Merged PRs
+  - Draft PRs
+  - Closed PRs
+  - Issues Opened
+  - Comments Made
+- Copy-to-Markdown shortcut for each PR or issue
+- Graceful error handling for invalid tokens, users, or empty results
+
+---
+
+## 🚀 Getting Started
 
 ```bash
+git clone <your-repo-url>
+cd github-performance-review
+
+cp .env.local.example .env.local
+# Add your GitHub token to .env.local
+
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🔐 GitHub Token Instructions
+Go to https://github.com/settings/tokens
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+* Click Generate new token (fine-grained)
+* Choose expiration (recommended: 7–30 days)
+* Select specific repositories, or all if needed
+* Enable the following read-only scopes:
 
-## Learn More
+#### ✅ Required Permissions
+Repository Permissions
+* Contents – Read-only
+* Metadata – Read-only
+* Pull requests – Read-only
+* Issues – Read-only
 
-To learn more about Next.js, take a look at the following resources:
+#### Organization Permissions (if using org repos)
+* Organization members – Read-only
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+#### Account Permissions
+* Profile – Read-only
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Copy the generated token and add it to .env.local like:
 
-## Deploy on Vercel
+```
+GITHUB_TOKEN=ghp_your_token_here
+```
+Restart the dev server:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🛡️ Security Notes
+* Your GitHub token is used only on the backend
+* It is never stored, never sent to the client, and never logged
+* This app stores no user data and does not persist anything
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## File Structure
+```
+src/
+├── app/
+│   ├── api/fetch-contributions/route.ts     # GitHub API proxy
+│   └── page.tsx                             # Main UI
+├── components/
+│   ├── CollapsibleSection.tsx               # For each contribution category
+│   └── CollapsibleStats.tsx                 # Summary section
+├── lib/
+│   └── github.ts                            # GitHub API helpers
+.env.local.example                           # Token example config
+README.md                                     # Project documentation
+```
+
+## 🧪 Todo / Nice to Have
+* Support for PRs reviewed (requires per-repo fetch)
+* Dark mode toggle
+* Export to CSV or Markdown report
+* Pagination for large datasets
