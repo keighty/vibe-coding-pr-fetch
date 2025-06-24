@@ -11,10 +11,11 @@ const headers = {
 }
 
 export async function fetchUserContributions(username: string, start: string, end: string) {
-  const [mergedPRs, reviewedPRs, draftPRs] = await Promise.all([
+  const [mergedPRs, reviewedPRs, draftPRs, closedPRs] = await Promise.all([
     getMergedPRs(username, start, end),
     getReviewedPRs(username, start, end),
     getDraftPRs(username, start, end),
+    getClosedPRs(username, start, end),
   ])
 
   return {
@@ -22,7 +23,7 @@ export async function fetchUserContributions(username: string, start: string, en
       totalMergedPRs: mergedPRs.length,
       totalReviewedPRs: reviewedPRs.length,
       totalDraftPRs: draftPRs.length,
-      totalClosedPRs: 0,
+      totalClosedPRs: closedPRs.length,
       totalIssuesOpened: 0,
       totalComments: 0,
       avgTimeToMerge: calculateAvgTimeToMerge(mergedPRs),
@@ -31,7 +32,7 @@ export async function fetchUserContributions(username: string, start: string, en
       'Merged PRs': mergedPRs,
       'Reviewed PRs': reviewedPRs,
       'Draft PRs': draftPRs,
-      'Closed PRs': [],
+      'Closed PRs': closedPRs,
       'Issues Opened': [],
       'Comments Made': [],
     },
@@ -127,6 +128,33 @@ async function getDraftPRs(username: string, start: string, end: string) {
     title: pr.title,
     url: pr.html_url,
     createdAt: pr.created_at,
+  }))
+}
+
+async function getClosedPRs(username: string, start: string, end: string) {
+  const query = [
+    'type:pr',
+    'is:closed',
+    `author:${username}`,
+    `closed:${start}..${end}`,
+    '-is:merged', // exclude merged
+  ].join(' ')
+
+  const url = `https://api.github.com/search/issues?q=${encodeURIComponent(query)}&per_page=100`
+  const res = await fetch(url, { headers })
+
+  if (!res.ok) {
+    const data = await res.json()
+    throw new Error(data.message || 'Failed to fetch closed PRs')
+  }
+
+  const result = await res.json()
+
+  return result.items.map((pr: any) => ({
+    title: pr.title,
+    url: pr.html_url,
+    createdAt: pr.created_at,
+    closedAt: pr.closed_at,
   }))
 }
 
