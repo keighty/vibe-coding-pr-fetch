@@ -11,15 +11,15 @@ const headers = {
 }
 
 export async function fetchUserContributions(username: string, start: string, end: string) {
-  const [mergedPRs] = await Promise.all([
+  const [mergedPRs, reviewedPRs] = await Promise.all([
     getMergedPRs(username, start, end),
-    // more categories later
+    getReviewedPRs(username, start, end),
   ])
 
   return {
     summary: {
       totalMergedPRs: mergedPRs.length,
-      totalReviewedPRs: 0,
+      totalReviewedPRs: reviewedPRs.length,
       totalDraftPRs: 0,
       totalClosedPRs: 0,
       totalIssuesOpened: 0,
@@ -28,7 +28,7 @@ export async function fetchUserContributions(username: string, start: string, en
     },
     sections: {
       'Merged PRs': mergedPRs,
-      'Reviewed PRs': [],
+      'Reviewed PRs': reviewedPRs,
       'Draft PRs': [],
       'Closed PRs': [],
       'Issues Opened': [],
@@ -75,4 +75,30 @@ function calculateAvgTimeToMerge(prs: { createdAt: string; mergedAt: string }[])
   const days = avgMillis / (1000 * 60 * 60 * 24)
 
   return `${days.toFixed(1)} days`
+}
+
+async function getReviewedPRs(username: string, start: string, end: string) {
+  const query = [
+    `type:pr`,
+    `commenter:${username}`,
+    `updated:${start}..${end}`,
+  ].join(' ')
+
+  const url = `https://api.github.com/search/issues?q=${encodeURIComponent(query)}&per_page=100`
+  const res = await fetch(url, { headers })
+
+  if (!res.ok) {
+    const data = await res.json()
+    throw new Error(data.message || 'Failed to fetch reviewed PRs')
+  }
+
+  const result = await res.json()
+
+  // Filter out PRs authored by the user (only reviews of others)
+  const reviewed = result.items.filter((pr: any) => pr.user.login !== username)
+
+  return reviewed.map((pr: any) => ({
+    title: pr.title,
+    url: pr.html_url,
+  }))
 }
