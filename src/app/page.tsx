@@ -7,10 +7,11 @@ import CollapsibleSection from "@/components/CollapsibleSection";
 export default function HomePage() {
   const [username, setUsername] = useState("");
   const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
+  const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+  const [endDate, setEndDate] = useState(today);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -63,6 +64,7 @@ export default function HomePage() {
             className="w-full border border-gray-300 rounded px-3 py-2"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
+            max={today}
           />
         </div>
 
