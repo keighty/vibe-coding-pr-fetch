@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 type Item = {
   title: string;
   url: string;
+  repo?: string;
 };
 
 export default function CollapsibleSection({
@@ -43,14 +44,20 @@ export default function CollapsibleSection({
               key={idx}
               className="flex items-center justify-between px-4 py-2"
             >
-              <a
-                href={item.url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-blue-600 underline"
-              >
-                {item.title}
-              </a>
+              <div className="flex flex-col">
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  {item.title}
+                </a>
+                {item.repo && (
+                  <span className="text-xs text-gray-500">{item.repo}</span>
+                )}
+              </div>
+
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(`[${item.title}](${item.url})`);
