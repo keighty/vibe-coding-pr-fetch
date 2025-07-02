@@ -17,26 +17,70 @@ export default function CollapsibleSection({
   items: Item[];
 }) {
   const [open, setOpen] = useState(true);
+  const [copySuccess, setCopySuccess] = useState<string | null>(null);
+
+  const handleCopyAll = async () => {
+    if (!items.length) return;
+
+    // Sort items by the repo field
+    const sortedItems = [...items].sort((a, b) => {
+      const repoA = a.repo?.toLowerCase() || "";
+      const repoB = b.repo?.toLowerCase() || "";
+      return repoA.localeCompare(repoB);
+    });
+
+    // Format as a bulleted Markdown list
+    const markdownLinks = sortedItems
+      .map((item) => `* [${item.title}](${item.url}) (${item.repo})`)
+      .join("\n");
+
+    try {
+      await navigator.clipboard.writeText(markdownLinks);
+      setCopySuccess(`Copied ${items.length} links!`);
+      setTimeout(() => setCopySuccess(null), 3000);
+    } catch (err) {
+      setCopySuccess("Failed to copy");
+    }
+  };
 
   return (
-    <div className="border rounded shadow-sm bg-white">
-      <button
-        className="w-full text-left px-4 py-2 font-semibold bg-gray-100 hover:bg-gray-200"
-        onClick={() => setOpen(!open)}
-      >
-        <span className="flex justify-between items-center w-full">
-          <span>
-            {title} ({items.length})
-          </span>
+    <div className="mb-4 border rounded">
+      <div className="flex items-center justify-between w-full p-2 bg-gray-100 rounded-t">
+        {/* Toggle icon on the left */}
+        <button
+          onClick={() => setOpen(!open)}
+          className="mr-2 text-gray-600 hover:text-black"
+          aria-label="Toggle section"
+        >
           <span
-            className={`transform transition-transform ${
-              open ? "rotate-90" : "rotate-0"
+            className={`inline-block transform transition-transform ${
+              open ? "rotate-90" : ""
             }`}
           >
             ▶
           </span>
-        </span>
-      </button>
+        </button>
+
+        {/* Title */}
+        <h2 className="font-semibold flex-grow">
+          {title} ({items.length})
+        </h2>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopyAll}
+            disabled={!items.length}
+            className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+          >
+            Copy All Links
+          </button>
+          {copySuccess && (
+            <span className="text-xs text-green-600">{copySuccess}</span>
+          )}
+        </div>
+      </div>
+
       {open && (
         <ul className="divide-y">
           {items.map((item, idx) => (
