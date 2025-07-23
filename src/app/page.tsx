@@ -3,6 +3,12 @@
 import { useState } from "react";
 import StatsSummary from "@/components/StatsSummary";
 import CollapsibleSection from "@/components/CollapsibleSection";
+import React from "react";
+
+// Get usernames from env at build time (client-safe)
+const usernamesFromEnv = process.env.NEXT_PUBLIC_GITHUB_USERNAMES
+  ? process.env.NEXT_PUBLIC_GITHUB_USERNAMES.split(',').map(u => u.trim()).filter(Boolean)
+  : null;
 
 export default function HomePage() {
   const [username, setUsername] = useState("");
@@ -12,6 +18,7 @@ export default function HomePage() {
   const [data, setData] = useState<any>(null);
   const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
   const [endDate, setEndDate] = useState(today);
+  const usernames = usernamesFromEnv;
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -31,7 +38,6 @@ export default function HomePage() {
 
       const result = await res.json();
       setData(result);
-      console.log(result);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -44,13 +50,26 @@ export default function HomePage() {
       <h1 className="text-2xl font-bold mb-6">GitHub Performance Review</h1>
 
       <div className="space-y-4 mb-6">
-        <input
-          type="text"
-          className="w-full border border-gray-300 rounded px-3 py-2"
-          placeholder="GitHub Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
+        {usernames && usernames.length > 0 ? (
+          <select
+            className="w-full border border-gray-300 rounded px-3 py-2"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          >
+            <option value="">Select GitHub Username</option>
+            {usernames.map((u) => (
+              <option key={u} value={u}>{u}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            className="w-full border border-gray-300 rounded px-3 py-2"
+            placeholder="GitHub Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        )}
 
         <div className="flex space-x-2">
           <input

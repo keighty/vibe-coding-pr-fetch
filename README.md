@@ -64,6 +64,16 @@ GITHUB_TOKEN=ghp_your_token_here
 ```
 Restart the dev server:
 
+## GitHub Username Dropdown
+
+To enable a dropdown for GitHub usernames, add a `NEXT_PUBLIC_GITHUB_USERNAMES` variable to your `.env.local` file:
+
+```
+NEXT_PUBLIC_GITHUB_USERNAMES=octocat,hubot,otheruser
+```
+
+If `NEXT_PUBLIC_GITHUB_USERNAMES` is not set, a text input will be shown instead. The dropdown will be populated with the usernames from this list.
+
 ## 🛡️ Security Notes
 * Your GitHub token is used only on the backend
 * It is never stored, never sent to the client, and never logged
