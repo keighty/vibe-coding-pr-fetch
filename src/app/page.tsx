@@ -3,6 +3,7 @@
 import { useState } from "react";
 import StatsSummary from "@/components/StatsSummary";
 import CollapsibleSection from "@/components/CollapsibleSection";
+import { createCustomSpan, addCustomAttributes } from "@/lib/honeycomb";
 import React from "react";
 
 // Get usernames from env at build time (client-safe)
@@ -24,25 +25,59 @@ export default function HomePage() {
     setLoading(true);
     setError("");
 
-    try {
-      const res = await fetch("/api/fetch-contributions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, startDate, endDate }),
-      });
+    await createCustomSpan(
+      'github-contributions-fetch',
+      async () => {
+        try {
+          // Add custom attributes to track the request
+          addCustomAttributes({
+            'github.startDate': startDate,
+            'github.endDate': endDate,
+            'request.type': 'github-contributions'
+          });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Something went wrong");
+          const res = await fetch("/api/fetch-contributions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, startDate, endDate }),
+          });
+
+          if (!res.ok) {
+            const data = await res.json();
+            // Add error attributes
+            addCustomAttributes({
+              'error.status': res.status,
+              'error.message': data.message || "Something went wrong"
+            });
+            throw new Error(data.message || "Something went wrong");
+          }
+
+          const result = await res.json();
+          
+          // Add success attributes
+          addCustomAttributes({
+            'response.success': true,
+            'response.sections_count': Object.keys(result.sections || {}).length,
+            'response.has_summary': !!result.summary
+          });
+          
+          setData(result);
+        } catch (e: any) {
+          addCustomAttributes({
+            'error.caught': true,
+            'error.message': e.message
+          });
+          setError(e.message);
+          throw e; // Re-throw to ensure span is marked as error
+        } finally {
+          setLoading(false);
+        }
+      },
+      {
+        'operation.type': 'user-action',
+        'component': 'HomePage'
       }
-
-      const result = await res.json();
-      setData(result);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   return (
