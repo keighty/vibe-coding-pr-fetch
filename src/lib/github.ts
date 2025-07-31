@@ -242,7 +242,7 @@ async function getIssuesOpened(username: string, start: string, end: string) {
   return sorted;
 }
 
-function formatItems(items) {
+function formatItems(items: any[]) {
   return items.map((pr: any) => {
     const match = pr.html_url.match(/github\.com\/([^/]+\/[^/]+)\//);
     return {

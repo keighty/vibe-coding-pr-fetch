@@ -14,9 +14,15 @@ type Item = {
 export default function CollapsibleSection({
   title,
   items,
+  username,
+  startDate,
+  endDate,
 }: {
   title: string;
   items: Item[];
+  username?: string;
+  startDate?: string;
+  endDate?: string;
 }) {
   const [open, setOpen] = useState(true);
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
@@ -34,8 +40,8 @@ export default function CollapsibleSection({
     setPrefixes((prev) => prev.map((p, i) => (i === idx ? prefix : p)));
   };
 
-  const handleCopyAll = async () => {
-    if (!items.length) return;
+  const generateMarkdownContent = () => {
+    if (!items.length) return "";
 
     // Sort items by the repo field
     const sorted = items.map((item, idx) => ({ ...item, idx }));
@@ -46,12 +52,18 @@ export default function CollapsibleSection({
     });
 
     // Format as a bulleted Markdown list, including prefix before the link text
-    const markdownLinks = sorted
+    return sorted
       .map((item) => {
         const prefix = prefixes[item.idx] ? `(${prefixes[item.idx]}) ` : "";
         return `* ${prefix}[${item.title}](${item.url}) (${item.repo})`;
       })
       .join("\n");
+  };
+
+  const handleCopyAll = async () => {
+    if (!items.length) return;
+
+    const markdownLinks = generateMarkdownContent();
 
     try {
       await navigator.clipboard.writeText(markdownLinks);
@@ -59,6 +71,38 @@ export default function CollapsibleSection({
       setTimeout(() => setCopySuccess(null), 3000);
     } catch (err) {
       setCopySuccess("Failed to copy");
+    }
+  };
+
+  const handleDownloadMarkdown = async () => {
+    if (!items.length || !username) return;
+
+    const markdownContent = generateMarkdownContent();
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    // Create section with header
+    const sectionContent = `## ${title} (${startDate} to ${endDate}) - Generated ${timestamp}\n\n${markdownContent}\n\n---\n\n`;
+
+    try {
+      const response = await fetch('/api/download-markdown', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          content: sectionContent,
+        }),
+      });
+
+      if (response.ok) {
+        setCopySuccess(`Downloaded to ${username}.md!`);
+        setTimeout(() => setCopySuccess(null), 3000);
+      } else {
+        setCopySuccess("Download failed");
+        setTimeout(() => setCopySuccess(null), 3000);
+      }
+    } catch (err) {
+      setCopySuccess("Download failed");
+      setTimeout(() => setCopySuccess(null), 3000);
     }
   };
 
@@ -94,6 +138,15 @@ export default function CollapsibleSection({
           >
             Copy All Links
           </button>
+          {username && (
+            <button
+              onClick={handleDownloadMarkdown}
+              disabled={!items.length}
+              className="text-sm text-green-600 hover:underline disabled:opacity-50"
+            >
+              Download MD
+            </button>
+          )}
           {copySuccess && (
             <span className="text-xs text-green-600">{copySuccess}</span>
           )}
