@@ -101,7 +101,14 @@ export default function HomePage() {
         <div className="space-y-6">
           <StatsSummary stats={data.summary} />
           {Object.entries(data.sections).map(([title, items]) => (
-            <CollapsibleSection key={title} title={title} items={items} />
+            <CollapsibleSection
+              key={title}
+              title={title}
+              items={items as any[]}
+              username={username}
+              startDate={startDate}
+              endDate={endDate}
+            />
           ))}
         </div>
       )}
